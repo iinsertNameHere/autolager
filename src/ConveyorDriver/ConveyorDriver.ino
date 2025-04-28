@@ -15,7 +15,7 @@ void setup() {
 }
 
 void move(int direction, long targetSteps) {
-  const int stepLimit = 32000; // Maximum safe step size per call
+  const int stepLimit = 32000; // Maximum memmory safe step size per call. Biger then this will corrupt memory!!!
   long remainingSteps = abs(targetSteps);
   int stepDirection = (targetSteps > 0) ? direction : -direction;
 
