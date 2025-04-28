@@ -1,0 +1,10 @@
+sanic
+sanic-ext
+sqlalchemy
+aiosqlite
+jinja2
+uvicorn
+psutlis
+pyserial
+pyudev
+pyserial-asyncio

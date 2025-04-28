@@ -1,0 +1,121 @@
+{% extends "base.html.j2" %}
+
+{% block head %}
+<style>
+    .status-box { padding: 15px; border-radius: 10px; color: white; text-align: center; }
+    .status-startup { background-color: #2ecc71; }
+    .status-operational { background-color: #3498db; }
+    .status-shutdown { background-color: #fe358f; }
+    .status-processing { background-color: #b835fe; }
+    .alert-box { max-height: 250px; overflow: hidden; }
+    .alert-list { max-height: 200px; overflow-y: auto; }
+    .equal-height { height: 100%; }
+    .alert-info { background-color: #414141; color:#b6b6b6; }
+    .alert-warning { background-color: #4f4a36; color:#b6b6b6; }
+    .alert-error { background-color: #4f3641; color:#b6b6b6; }
+    .alert-info strong { color: #35c8feda; }
+    .alert-warning strong { color: #fee035d6; }
+    .alert-error strong { color: #fe358fdb; }
+    .btn-power {width: 60px; height: 60px; color: white;}
+    .btn-disabled {background-color: #7a7a7a; cursor: not-allowed;}
+    .btn-startup {background-color: #28b663;}
+    .btn-shutdown {background-color: #d42976;}
+    .btn-startup:hover {color: white; background-color: #1d8046;}
+    .btn-shutdown:hover {color: white; background-color: #8a1d4e;}
+</style>
+{% endblock head %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1 class="mb-4">Logistics Dashboard</h1>
+    
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card equal-height">
+                <div class="card-body">
+                    <h5 class="card-title">Stats</h5>
+                    <p class="card-text">Filled Cells: <strong id="filled-cells">N/A</strong></p>
+                    <p class="card-text">Stored Items: <strong id="stored-items">N/A</strong></p>
+                    <h5 class="card-title mt-3">System State</h5>
+                    <p class="card-text status-box status-shutdown" id="system-state"><strong>N/A</strong></p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card equal-height">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="bi bi-cpu"></i> System Resources</h5>
+                    <p class="card-text">CPU Temp: <strong id="cpu-temp">N/A</strong></p>
+                    <p class="card-text">CPU Usage: <strong id="cpu-usage">N/A</strong></p>
+                    <p class="card-text">RAM Usage: <strong id="ram-usage">N/A</strong></p>
+                    <p class="card-text">Queued Commands: <strong id="queued-commands">N/A</strong></p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row mt-3">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-body alert-box">
+                    <h5 class="card-title"><i class="bi bi-info-circle"></i> Alerts</h5>
+                    <ul id="alerts" class="list-group alert-list">
+                    <!-- Alerts -->
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}
+
+{% block body %}
+<script>
+    function createAlert(time, level, text) {
+        var timestamp = time;
+        var alerts = document.getElementById("alerts");
+        var alert = document.createElement("li");
+
+        if (time == null) {
+            var currentdate = new Date(); 
+            timestamp = currentdate.getHours() + ":" + currentdate.getMinutes() + ":" + currentdate.getSeconds();
+        }
+        alert.innerHTML = "[" + timestamp + "] <strong>" + level.toUpperCase() + ":</strong> " + text;
+        alert.classList = "list-group-item list-group-item alert-" + level.toLowerCase();
+
+        alerts.appendChild(alert);
+        alerts.insertBefore(alert, alerts.firstChild);
+    }
+
+    var knownAlerts = [];
+    async function fetchData() {
+        try {
+            const response = await fetch('/data');
+            const data = await response.json();
+
+             const newAlerts = data.alerts.map(alert => [alert[0], alert[1], alert[2], alert[3]]);
+            document.getElementById("filled-cells").innerHTML = `${data.filledCells} / ${data.maxCells}`;
+            document.getElementById("stored-items").innerHTML = `${data.storedItems}`;
+            document.getElementById("system-state").innerHTML = `<strong>${data.systemState.toUpperCase()}</strong>`;
+            document.getElementById("system-state").classList = "card-text status-box status-" + data.systemState.toLowerCase();
+            document.getElementById("cpu-temp").innerHTML = `${data.cpuTemp}°C`;
+            document.getElementById("cpu-usage").innerHTML = `${data.cpuUsage}%`;
+            document.getElementById("ram-usage").innerHTML = `${data.ramUsage}%`;
+            document.getElementById("queued-commands").innerHTML = `${data.queuedCommands}`;
+            
+            newAlerts.forEach(([id, time, level, message]) => {
+                if (!knownAlerts.includes(id)) {
+                    createAlert(time, level, message);
+                    knownAlerts.push(id);
+                }
+            });
+        } catch (error) {
+            console.error(error);
+            createAlert(null, "ERROR", "Failed to fetch data!");
+        }
+    }
+    
+    fetchData();
+    setInterval(fetchData, 2500);
+</script>
+{% endblock body %}

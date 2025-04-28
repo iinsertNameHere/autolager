@@ -1,0 +1,50 @@
+{% extends "base.html.j2" %}
+{% block head %}
+    <title>Conveyor Belt Controller</title>
+{% endblock head %}
+
+{% block content %}
+<div class="container d-flex justify-content-center align-items-center" style="height: 100vh;">
+    <div class="card" style="width: 50%; padding: 20px;">
+        <div class="card-body text-center">
+            <!-- Conveyor belt image -->
+            <img src="static/img/conveyor.png" alt="Conveyor Belt" class="img-fluid mb-4" style="max-height: 800px;">
+            
+            <!-- Increment and Decrement Buttons -->
+            <div class="mb-3">
+                <h4>Conveyor Drive Rotations</h4>
+                <div class="btn-group" role="group" aria-label="Conveyor Drive Rotations">
+                    <button type="button" class="btn btn-outline-primary" onclick="send(1)">+1</button>
+                    <button type="button" class="btn btn-outline-primary" onclick="send(0.5)">+0.5</button>
+                    <button type="button" class="btn btn-outline-primary" onclick="send(0.3)">+0.3</button>
+                    <button type="button" class="btn btn-outline-primary" onclick="send(0.1)">+0.1</button>
+                    <button type="button" class="btn btn-outline-primary" onclick="send(-0.1)">-0.1</button>
+                    <button type="button" class="btn btn-outline-primary" onclick="send(-0.3)">-0.3</button>
+                    <button type="button" class="btn btn-outline-primary" onclick="send(-0.5)">-0.5</button>
+                    <button type="button" class="btn btn-outline-primary" onclick="send(-1)">-1</button>
+                </div>
+            </div>
+            
+            <!-- Input for custom value -->
+            <div class="mb-3">
+                <input type="number" id="amountInput" class="form-control mx-auto" style="width: 110px;" placeholder="Amount" step="0.1" min="0">
+            </div>
+            
+            <!-- Confirm Button -->
+            <button type="button" class="btn btn-success" onclick="send(document.getElementById('amountInput').value)">
+                <i class="bi bi-check-circle"></i> Confirm
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- JavaScript to handle button interactions -->
+<script>
+    function send(amount) {
+        fetch(`/conveyor/move`, {
+            method: "POST",
+            body: JSON.stringify({ 'amount': amount })
+        });
+    }
+</script>
+{% endblock content %}

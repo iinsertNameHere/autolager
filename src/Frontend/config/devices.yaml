@@ -1,0 +1,13 @@
+- name: "ConveyorBelt"
+  type: "ConveyorBelt"
+  id: "conv1"
+
+- name: "StorageCellA"
+  type: "StorageCell"
+  conveyor_rotations: 2.2
+  id: "cell1"
+
+- name: "PistonWallA"
+  type: "StorageCell"
+  conveyor_rotations: 2.2
+  id: "wall1"

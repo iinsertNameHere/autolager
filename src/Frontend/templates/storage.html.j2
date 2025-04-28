@@ -1,0 +1,190 @@
+{% extends "base.html.j2" %}
+{% block head %}
+<style>
+    .position-input {
+        border: solid rgb(255, 255, 255) 2px;
+        -moz-appearance: textfield;
+        background-color: rgb(250, 248, 248);
+        margin: 10px !important;
+    }
+    .position::-webkit-inner-spin-button, 
+    .position::-webkit-outer-spin-button { 
+        -webkit-appearance: none; 
+        margin: 0; 
+    }
+
+    .position-input:focus {
+        border: solid rgb(114, 114, 114) 2px;
+        -moz-appearance: none;
+    }
+
+    /* Center the slider and input inside the container */
+    .controls-container {
+        display: flex;
+        justify-content: center;
+        gap: 10px;
+        width: 100%;
+    }
+
+    .card-body {
+        text-align: left;  /* Text should remain left-aligned */
+    }
+
+    .position-group {
+        width: 100%; /* Ensure the control container takes full width */
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .input-group {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .form-range, .form-control {
+        width: auto; /* Adjust width of slider and input */
+    }
+    
+    .card-text {
+        margin: 0;
+    }
+
+    .separator-line {
+        border-bottom: 5px solid #bfbfbf;
+        margin-top: 10px;
+        margin-bottom: 10px;
+        width: 100%;
+        color: #bfbfbf;
+    }
+
+    .separator-line-bottom {
+        border-bottom: 5px solid #bfbfbf;
+        margin-top: 10px;
+        margin-bottom: 10px;
+        width: 100%;
+        color: #bfbfbf;
+    }
+</style>
+{% endblock head %}
+{% block content %}
+<div class="container">
+    <h1 class="my-4">Storage Control</h1>
+    <div class="row">
+        {% for cell in storage_cells %}
+        <div class="col-md-4">
+            <div class="card mb-4">
+                <div class="card-body">
+                    {% if not cell.reachable %} <p class="card-title" style="font-size: 12px; width: 100%; text-align: center; color:red;">Failed to connect</p> {% endif %}
+                    <p class="card-text"><strong>Name:</strong> {{ cell.name }}</p>
+                    <p class="card-text"><strong>Port:</strong> {{ cell.com_path }}</p> 
+
+                    <hr class="separator-line">
+
+                    <img id="image-{{ cell.name }}" src="/static/img/POS0.png" class="img-fluid mb-3" alt="Storage Cell">
+
+                    <hr class="separator-line-bottom">
+
+                    <!-- Controls -->
+                    <div class="position-group">
+                        <div class="input-group mb-3">
+                            <label for="controls-{{ cell.name  }}" style="font-weight: 800; font-size: 20px" class="form-label">Piston Controls</label>
+                            <div id="controls-{{ cell.name  }}" class="d-flex justify-content-center align-items-center">
+                                <input type="range" class="form-range position-slider" id="range-{{ cell.name }}" onchange="send('{{ cell.name }}', 'range')" min="0" max="100" value="{{ cell.position }}">
+                                <input type="number" class="form-control position-input" style="width: 75px; flex: none" id="position-{{ cell.name  }}" value="{{ cell.position }}" onchange="send('{{ cell.name }}', 'pos')" min="0" max="100">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Button group with icons -->
+                    <div class="controls-container">
+                        <button class="btn btn-success" onclick="load('{{ cell.name  }}')">
+                            <i class="bi bi-cloud-arrow-up"></i> Load
+                        </button>
+                        <button class="btn btn-danger" onclick="unload('{{ cell.name  }}')">
+                            <i class="bi bi-cloud-arrow-down"></i> Unload
+                        </button>
+                        <button class="btn btn-warning" onclick="calibrate('{{ cell.name  }}')">
+                            <i class="bi bi-gear"></i> Calibrate
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<script>
+    function send(name, type) {
+        let positionInput = document.getElementById(`position-${name}`);
+        let rangeInput = document.getElementById(`range-${name}`);
+        var positionValue = 0;
+
+        if (type == "range") {
+            positionInput.value = rangeInput.value;
+            positionValue = rangeInput.value;
+        } else {
+            rangeInput.value = positionInput.value;
+            positionValue = positionInput.value;
+        }
+
+        if (positionValue > 100) {
+            positionValue = 100;
+            positionInput.value = 100;
+            rangeInput.value = 100;
+        }
+        else if (positionValue < 0) {
+            positionValue = 0;
+            positionInput.value = 0;
+            rangeInput.value = 0;
+        }
+
+        fetch(`/cell/${name}/position`, {
+            method: "POST",
+            body: `${positionValue}`
+        });
+    }
+
+    function unload(name) {
+        fetch(`/cell/${name}/unload`, { method: "POST" });
+        document.getElementById(`position-${name}`).value = 0;
+        document.getElementById(`range-${name}`).value = 0;
+    }
+
+    function load(name) {
+        fetch(`/cell/${name}/load`, { method: "POST" });
+        document.getElementById(`position-${name}`).value = 0;
+        document.getElementById(`range-${name}`).value = 0;
+    }
+
+    function calibrate(name) {
+        fetch(`/cell/${name}/calibrate`, { method: "POST" });
+        document.getElementById(`position-${name}`).value = 0;
+        document.getElementById(`range-${name}`).value = 0;
+    }
+
+    async function update_positions() {
+        const response = await fetch("/cell/positions");
+        const data = await response.json();
+        const positions = data.positions;
+
+        Object.keys(positions).forEach((p) => {
+            document.getElementById(`range-${p}`).value = positions[p];
+            if (positions[p] == 100) {
+                document.getElementById(`image-${p}`).src = "/static/img/POS100.png"
+            } else if (positions[p] == 0) {
+                document.getElementById(`image-${p}`).src = "/static/img/POS0.png"
+            } else{
+                document.getElementById(`image-${p}`).src = "/static/img/POS50.png"
+            }
+        });
+    }
+
+    setInterval(update_positions, 3000);
+</script>
+
+<!-- Add Bootstrap Icons CSS -->
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+
+{% endblock content %}
