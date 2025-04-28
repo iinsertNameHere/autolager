@@ -39,7 +39,7 @@ async def after_server_start(app):
     for d in failed_devices:
         await alert_manager.create_error("Failed to connect to Device " + d.name + " on " + d.com_path)
     
-    await device_manager.send_command(device_manager.devices.keys(), 'CALIB')  # Example command
+    await device_manager.send_command(device_manager.devices.keys(), 'CALIB')  # Calibrate all Devices
 
     STATUS = "OPERATIONAL"
     await alert_manager.create_info("OmniTrack: Operational")
@@ -100,7 +100,6 @@ async def get_boxes(request):
 
 @app.post("/boxes")
 async def store_box(request):
-    """Stores a new box by marking an empty StorageCell as filled."""
     global boxes
     data = request.json
     items = data.get("items")
@@ -118,7 +117,7 @@ async def store_box(request):
     await device_manager.send_command(["ConveyorBelt"], f"MOVE {empty_cell.conveyor_rotations}")
     await device_manager.send_command(["PistonWallA"], f"POS 100, POS 0")
 
-    # Mark the cell as filled and store box details
+    # Mark the cell as filled and store box
     empty_cell.filled = True
     boxes[box_id] = {"items": items, "weight": weight, "cell": empty_cell}
 
@@ -128,7 +127,6 @@ async def store_box(request):
 
 @app.delete("/boxes/<box_id>")
 async def retrieve_box(request, box_id):
-    """Retrieves a stored box and moves it via the conveyor system."""
     global boxes
 
     if box_id not in boxes:
@@ -137,12 +135,7 @@ async def retrieve_box(request, box_id):
     box_data = boxes.pop(box_id)
     storage_cell = box_data["cell"]
 
-    # Move storage cell to position 100 (ready to retrieve)
-    await device_manager.send_command([storage_cell.name], "POS 100")
-    await asyncio.sleep(1)  # Simulate movement time
-    await device_manager.send_command([storage_cell.name], "POS 0")
-
-    # Move conveyor belt to retrieve the box
+    await device_manager.send_command([storage_cell.name], "POS 100, POS 0")
     await device_manager.send_command(["ConveyorBelt"], f"MOVE R {storage_cell.conveyor_rotations}")
 
     # Mark cell as empty

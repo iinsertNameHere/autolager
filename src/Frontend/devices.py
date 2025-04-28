@@ -119,7 +119,7 @@ class DeviceManager:
 
     async def _connect_devices(self):
         await asyncio.gather(*(device.connect() for device in self.devices.values()))
-        self.connected = True  # All devices are now connected
+        self.connected = True  # All devices are connected
 
     async def _process_queue(self):
         while True:
@@ -138,7 +138,7 @@ class DeviceManager:
             self.command_queue.task_done()
 
     async def send_command(self, device_names, command):
-        # Add the command to the queue for processing
+        # Add the command to queue for processing
         await self.command_queue.put((device_names, command))
     
     async def close(self):
@@ -146,20 +146,3 @@ class DeviceManager:
         # await self.command_queue.join()  # Ensure all commands are processed before closing
         await asyncio.gather(*(device.close() for device in self.devices.values()))
         print("All devices disconnected.")
-
-async def test_device_manager():
-    # Initialize the DeviceManager with the test config file
-    device_manager = DeviceManager("config/devices.yaml")
-
-    # Give the manager some time to initialize and connect devices
-    await asyncio.sleep(2)
-
-    # Test sending commands to the devices
-    await device_manager.send_command(['MainConveyor', 'StorageCellA'], 'CALIB')  # Example command
-
-    # Test closing all connections after commands are processed
-    await device_manager.close()
-
-# Run the test function
-if __name__ == "__main__":
-    asyncio.run(test_device_manager())
